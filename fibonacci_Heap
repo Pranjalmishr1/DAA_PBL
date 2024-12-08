@@ -1,1 +1,137 @@
+import java.util.*;
+
+class FibonacciHeapNode {
+    int key;
+    FibonacciHeapNode parent;
+    FibonacciHeapNode child;
+    FibonacciHeapNode left;
+    FibonacciHeapNode right;
+    int degree;
+    boolean mark;
+
+    public FibonacciHeapNode(int key) {
+        this.key = key;
+        this.degree = 0;
+        this.mark = false;
+        this.left = this;
+        this.right = this;
+    }
+}
+
+class FibonacciHeap {
+    private FibonacciHeapNode minNode;
+    private int nodeCount;
+
+    public FibonacciHeap() {
+        minNode = null;
+        nodeCount = 0;
+    }
+
+    public void insert(FibonacciHeapNode node) {
+        if (minNode != null) {
+            node.left = minNode;
+            node.right = minNode.right;
+            minNode.right = node;
+            node.right.left = node;
+            if (node.key < minNode.key) {
+                minNode = node;
+            }
+        } else {
+            minNode = node;
+        }
+        nodeCount++;
+    }
+
+    public FibonacciHeapNode extractMin() {
+        FibonacciHeapNode min = minNode;
+        if (min != null) {
+            if (min.child != null) {
+                FibonacciHeapNode child = min.child;
+                do {
+                    FibonacciHeapNode next = child.right;
+                    insert(child);
+                    child.parent = null;
+                    child = next;
+                } while (child != min.child);
+            }
+            min.left.right = min.right;
+            min.right.left = min.left;
+            if (min == min.right) {
+                minNode = null;
+            } else {
+                minNode = min.right;
+                consolidate();
+            }
+            nodeCount--;
+        }
+        return min;
+    }
+
+    private void consolidate() {
+        int arraySize = ((int) Math.floor(Math.log(nodeCount) / Math.log(2))) + 1;
+        List<FibonacciHeapNode> array = new ArrayList<>(Collections.nCopies(arraySize, null));
+
+        List<FibonacciHeapNode> rootList = new ArrayList<>();
+        FibonacciHeapNode current = minNode;
+        if (current != null) {
+            do {
+                rootList.add(current);
+                current = current.right;
+            } while (current != minNode);
+        }
+
+        for (FibonacciHeapNode node : rootList) {
+            int degree = node.degree;
+            while (array.get(degree) != null) {
+                FibonacciHeapNode other = array.get(degree);
+                if (node.key > other.key) {
+                    FibonacciHeapNode temp = node;
+                    node = other;
+                    other = temp;
+                }
+                link(other, node);
+                array.set(degree, null);
+                degree++;
+            }
+            array.set(degree, node);
+        }
+
+        minNode = null;
+        for (FibonacciHeapNode node : array) {
+            if (node != null) {
+                if (minNode != null) {
+                    node.left.right = node.right;
+                    node.right.left = node.left;
+                    node.left = minNode;
+                    node.right = minNode.right;
+                    minNode.right = node;
+                    node.right.left = node;
+                    if (node.key < minNode.key) {
+                        minNode = node;
+                    }
+                } else {
+                    minNode = node;
+                }
+            }
+        }
+    }
+
+    private void link(FibonacciHeapNode node, FibonacciHeapNode parent) {
+        node.left.right = node.right;
+        node.right.left = node.left;
+        node.parent = parent;
+        if (parent.child == null) {
+            parent.child = node;
+            node.right = node;
+            node.left = node;
+        } else {
+            node.left = parent.child;
+            node.right = parent.child.right;
+            parent.child.right = node;
+            node.right.left = node;
+        }
+        parent.degree++;
+        node.mark = false;
+    }
+}
 
